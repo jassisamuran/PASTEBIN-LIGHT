@@ -9,6 +9,7 @@ https://pastebinlight1.vercel.app
 ## 📋 Project Description
 
 Pastebin Lite is a modern web application built with Next.js that enables users to:
+
 - Create text pastes and receive shareable URLs
 - Set optional time-based expiry (TTL) on pastes
 - Set optional view count limits on pastes
@@ -43,12 +44,12 @@ Each paste is stored as a Redis key-value pair:
 **Key format:** `paste:{id}`
 
 **Value structure:**
+
 ```javascript
 {
   content: string,        // The paste text content
   createdAt: number,      // Timestamp in milliseconds
   viewCount: number,      // Current number of views
-  ttlSeconds?: number,    // Optional TTL in seconds
   maxViews?: number       // Optional maximum view count
 }
 ```
@@ -64,12 +65,14 @@ Each paste is stored as a Redis key-value pair:
 ### Installation Steps
 
 1. **Clone the repository:**
+
 ```bash
 git clone https://github.com/YOUR_USERNAME/pastebin-lite.git
 cd pastebin-lite
 ```
 
 2. **Install dependencies:**
+
 ```bash
 npm install
 ```
@@ -77,21 +80,25 @@ npm install
 3. **Set up Vercel KV database:**
 
 Install Vercel CLI:
+
 ```bash
 npm install -g vercel
 ```
 
 Login to Vercel:
+
 ```bash
 vercel login
 ```
 
 Link your project:
+
 ```bash
 vercel link
 ```
 
 Create a KV database:
+
 - Go to https://vercel.com/dashboard
 - Navigate to your project
 - Click "Storage" tab
@@ -99,28 +106,32 @@ Create a KV database:
 - Connect it to your project
 
 Pull environment variables:
+
 ```bash
 vercel env pull .env.local
 ```
 
 4. **Add base URL to `.env.local`:**
+
 ```bash
 echo "NEXT_PUBLIC_BASE_URL=http://localhost:3000" >> .env.local
 ```
 
 5. **Run the development server:**
+
 ```bash
 npm run dev
 ```
 
 6. **Open your browser:**
-Visit http://localhost:3000
+   Visit http://localhost:3000
 
 ## 🚀 Deployment
 
 ### Deploy to Vercel
 
 1. **Push code to GitHub:**
+
 ```bash
 git add .
 git commit -m "Initial commit"
@@ -128,17 +139,20 @@ git push origin main
 ```
 
 2. **Deploy via Vercel:**
+
 ```bash
 vercel --prod
 ```
 
 Or use the Vercel Dashboard:
+
 - Go to https://vercel.com/new
 - Import your GitHub repository
 - Vercel auto-detects Next.js configuration
 - Click "Deploy"
 
 3. **Configure environment variables:**
+
 - Create KV database in Vercel Dashboard
 - Connect it to your project
 - Set `NEXT_PUBLIC_BASE_URL` to your production URL
@@ -147,11 +161,13 @@ Or use the Vercel Dashboard:
 ## 🔌 API Documentation
 
 ### Health Check
+
 ```http
 GET /api/healthz
 ```
 
 **Response:**
+
 ```json
 {
   "ok": true
@@ -159,21 +175,24 @@ GET /api/healthz
 ```
 
 ### Create Paste
+
 ```http
 POST /api/pastes
 Content-Type: application/json
 ```
 
 **Request Body:**
+
 ```json
 {
   "content": "Your paste content here",
-  "ttl_seconds": 60,    // Optional: expires after 60 seconds
-  "max_views": 5        // Optional: expires after 5 views
+  "ttl_seconds": 60, // Optional: expires after 60 seconds
+  "max_views": 5 // Optional: expires after 5 views
 }
 ```
 
 **Response (201):**
+
 ```json
 {
   "id": "abc123xy",
@@ -182,6 +201,7 @@ Content-Type: application/json
 ```
 
 **Error Response (400):**
+
 ```json
 {
   "error": "Content is required"
@@ -189,11 +209,13 @@ Content-Type: application/json
 ```
 
 ### Fetch Paste (API)
+
 ```http
 GET /api/pastes/:id
 ```
 
 **Response (200):**
+
 ```json
 {
   "content": "Your paste content here",
@@ -203,11 +225,13 @@ GET /api/pastes/:id
 ```
 
 **Notes:**
+
 - `remaining_views` is `null` if no view limit is set
 - `expires_at` is `null` if no TTL is set
 - Each successful API fetch increments the view count
 
 **Error Response (404):**
+
 ```json
 {
   "error": "Paste not found"
@@ -215,6 +239,7 @@ GET /api/pastes/:id
 ```
 
 ### View Paste (HTML)
+
 ```http
 GET /p/:id
 ```
@@ -229,7 +254,8 @@ Returns an HTML page displaying the paste content.
 
 **Decision:** Only API fetches (`GET /api/pastes/:id`) increment the view count, not HTML page views (`GET /p/:id`).
 
-**Rationale:** 
+**Rationale:**
+
 - Follows the specification exactly: "Each successful API fetch counts as a view"
 - Prevents double-counting when users view a paste
 - Allows users to refresh the page without consuming views
@@ -240,12 +266,14 @@ Returns an HTML page displaying the paste content.
 **Decision:** Implemented both application-level and Redis-level TTL.
 
 **Implementation:**
+
 - Application checks expiry time on every request
 - Redis TTL is set to `ttl_seconds + 60` (with 60-second buffer)
 - Application enforces exact expiry time
 - Redis automatically cleans up expired keys after buffer period
 
 **Rationale:**
+
 - Ensures precise expiry time as specified by user
 - Redis TTL provides automatic cleanup to prevent data accumulation
 - Buffer prevents edge cases where paste might be accessed during cleanup
@@ -255,6 +283,7 @@ Returns an HTML page displaying the paste content.
 **Decision:** No server-side sessions or global mutable state.
 
 **Rationale:**
+
 - Perfect for serverless deployment on Vercel
 - Horizontally scalable without coordination
 - Each request is independent
@@ -265,13 +294,15 @@ Returns an HTML page displaying the paste content.
 **Decision:** Implemented deterministic time testing via `x-test-now-ms` header.
 
 **Implementation:**
+
 ```javascript
-if (process.env.TEST_MODE === '1' && headers.get('x-test-now-ms')) {
-  currentTime = parseInt(headers.get('x-test-now-ms'));
+if (process.env.TEST_MODE === "1" && headers.get("x-test-now-ms")) {
+  currentTime = parseInt(headers.get("x-test-now-ms"));
 }
 ```
 
 **Rationale:**
+
 - Allows automated testing of TTL functionality
 - No need to wait for actual time to pass in tests
 - Meets specification requirement exactly
@@ -281,6 +312,7 @@ if (process.env.TEST_MODE === '1' && headers.get('x-test-now-ms')) {
 **Decision:** Use Redis atomic operations for view counting.
 
 **Rationale:**
+
 - Prevents race conditions under concurrent access
 - Ensures accurate view counts
 - No over-counting or under-counting
@@ -291,6 +323,7 @@ if (process.env.TEST_MODE === '1' && headers.get('x-test-now-ms')) {
 **Decision:** Use `nanoid` library with 8-character IDs.
 
 **Rationale:**
+
 - URL-safe characters only
 - 8 characters provides ~207 billion unique combinations
 - Collision probability is negligible
@@ -301,6 +334,7 @@ if (process.env.TEST_MODE === '1' && headers.get('x-test-now-ms')) {
 **Decision:** Consistent 404 responses for all unavailable paste scenarios.
 
 **Rationale:**
+
 - Follows specification requirement
 - Doesn't leak information about whether paste existed
 - Consistent user experience
@@ -311,11 +345,13 @@ if (process.env.TEST_MODE === '1' && headers.get('x-test-now-ms')) {
 **Decision:** Content is safely rendered without script execution.
 
 **Implementation:**
+
 - React automatically escapes content in JSX
 - Server-side rendering uses safe string interpolation
 - No `dangerouslySetInnerHTML` used
 
 **Rationale:**
+
 - Security-first approach
 - Prevents malicious paste content from executing
 - Meets specification requirement
@@ -323,6 +359,7 @@ if (process.env.TEST_MODE === '1' && headers.get('x-test-now-ms')) {
 ## 🧪 Testing
 
 ### Run Automated Tests
+
 ```bash
 # Test local development
 ./test.sh
@@ -334,6 +371,7 @@ BASE_URL=https://your-app.vercel.app ./test.sh
 ### Manual Testing Examples
 
 **Create a paste:**
+
 ```bash
 curl -X POST http://localhost:3000/api/pastes \
   -H "Content-Type: application/json" \
@@ -341,11 +379,13 @@ curl -X POST http://localhost:3000/api/pastes \
 ```
 
 **Fetch a paste:**
+
 ```bash
 curl http://localhost:3000/api/pastes/abc123xy
 ```
 
 **Test TTL expiry:**
+
 ```bash
 # Set TEST_MODE=1 in .env.local first
 curl http://localhost:3000/api/pastes/abc123xy \
@@ -353,6 +393,7 @@ curl http://localhost:3000/api/pastes/abc123xy \
 ```
 
 ## 📁 Project Structure
+
 ```
 pastebin-lite/
 ├── app/
@@ -382,13 +423,13 @@ pastebin-lite/
 
 ## 🔐 Environment Variables
 
-| Variable | Description | Required | Example |
-|----------|-------------|----------|---------|
-| `KV_REST_API_URL` | Vercel KV API endpoint | Yes | `https://xxx.upstash.io` |
-| `KV_REST_API_TOKEN` | Vercel KV API token | Yes | Auto-set by Vercel |
-| `KV_REST_API_READ_ONLY_TOKEN` | Read-only token | Yes | Auto-set by Vercel |
-| `NEXT_PUBLIC_BASE_URL` | Base URL for paste links | Yes | `https://your-app.vercel.app` |
-| `TEST_MODE` | Enable deterministic time testing | No | `0` or `1` |
+| Variable                      | Description                       | Required | Example                       |
+| ----------------------------- | --------------------------------- | -------- | ----------------------------- |
+| `KV_REST_API_URL`             | Vercel KV API endpoint            | Yes      | `https://xxx.upstash.io`      |
+| `KV_REST_API_TOKEN`           | Vercel KV API token               | Yes      | Auto-set by Vercel            |
+| `KV_REST_API_READ_ONLY_TOKEN` | Read-only token                   | Yes      | Auto-set by Vercel            |
+| `NEXT_PUBLIC_BASE_URL`        | Base URL for paste links          | Yes      | `https://your-app.vercel.app` |
+| `TEST_MODE`                   | Enable deterministic time testing | No       | `0` or `1`                    |
 
 ## 🐛 Troubleshooting
 
@@ -397,6 +438,7 @@ pastebin-lite/
 **Cause:** Cannot connect to KV database
 
 **Solution:**
+
 1. Verify KV database is created and connected in Vercel
 2. Check environment variables are set correctly
 3. Redeploy the application
@@ -406,6 +448,7 @@ pastebin-lite/
 **Cause:** KV environment variables not configured
 
 **Solution:**
+
 1. Run `vercel env pull .env.local` for local development
 2. Ensure KV database is connected in Vercel Dashboard for production
 3. Verify all three KV environment variables exist
@@ -415,6 +458,7 @@ pastebin-lite/
 **Cause:** `NEXT_PUBLIC_BASE_URL` not set correctly
 
 **Solution:**
+
 1. Set `NEXT_PUBLIC_BASE_URL` to your actual Vercel URL
 2. Redeploy the application
 
@@ -424,8 +468,4 @@ MIT
 
 ## 👤 Author
 
-[Your Name]
-
-## 🙏 Acknowledgments
-
-Built as a take-home assignment for [Company Name]
+Jaspreet Singh
